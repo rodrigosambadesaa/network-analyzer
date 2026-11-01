@@ -56,7 +56,8 @@ public final class MainActivity extends Activity {
         b.setOnClickListener(v->task.run());return b;
     }
     private void show(String s){main.post(()->{if(!isFinishing())output.setText(s);});}
-    private void execute(Runnable r){
+    @FunctionalInterface private interface CheckedRunnable { void run() throws Exception; }
+    private void execute(CheckedRunnable r){
         if(busy){Toast.makeText(this,"Hay una prueba en curso",Toast.LENGTH_SHORT).show();return;}
         busy=true;
         tasks.execute(()->{try{r.run();}catch(Exception e){show("Error: "+e.getClass().getSimpleName()+" — "+e.getMessage());}
@@ -73,7 +74,7 @@ public final class MainActivity extends Activity {
                     "\nPortal cautivo: "+captive+"\nVPN activa: "+vpn+"\n\nEjecutando diagnóstico activo…");
             ConnectivityAndInternetAccess.InternetResult response=ConnectivityAndInternetAccess.checkInternetBlockingDefault(this);
             show("Red activa: "+connected+"\nTransporte físico: "+physical+"\nValidación Android: "+validated+
-                    "\nPortal cautivo: "+captive+"\nVPN: "+vpn+"\n\nResultado del Gist:\n"+response);
+                    "\nPortal cautivo: "+captive+"\nVPN: "+vpn+"\n\nResultado del Gist:\nAlcanzable: "+response.isReachable()+"\nDestino: "+response.getReachedHost()+"\nDuración: "+response.getElapsedMilliseconds()+" ms\nIntentos: "+response.getAttemptedHosts());
         });
     }
     private void showWifi(){
