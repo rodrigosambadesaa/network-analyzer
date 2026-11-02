@@ -16,6 +16,21 @@ public final class LanScanner {
         if(!isPrivateIpv4(a,b))throw new IllegalArgumentException("Only private Wi-Fi IPv4 networks are supported");
         return a+"."+b+"."+c+".";
     }
+    /** Validate a dotted IPv4 address and derive the single /24 block containing it. */
+    public static String prefixFromAddress(String address) {
+        if (address == null || !address.matches("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"))
+            throw new IllegalArgumentException("Invalid Wi-Fi IPv4 address");
+        String[] octets = address.split("\\.");
+        int[] numbers = new int[4];
+        for (int i = 0; i < 4; i++) {
+            numbers[i] = Integer.parseInt(octets[i]);
+            if (numbers[i] < 0 || numbers[i] > 255)
+                throw new IllegalArgumentException("Invalid IPv4 octet");
+        }
+        if (!isPrivateIpv4(numbers[0], numbers[1]))
+            throw new IllegalArgumentException("Only private Wi-Fi IPv4 networks are supported");
+        return numbers[0] + "." + numbers[1] + "." + numbers[2] + ".";
+    }
     public static List<String> scan(String prefix) throws Exception {
         if(prefix==null||!prefix.matches("(?:\\d{1,3}\\.){3}"))
             throw new IllegalArgumentException("Invalid subnet");
