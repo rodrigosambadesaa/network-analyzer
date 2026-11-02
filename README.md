@@ -25,3 +25,7 @@ gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:bundleRelea
 
 ## Licencia y atribución
 Se conserva la atribución MIT de la biblioteca original de conectividad (Emil Davtyan, str4d y colaboradores). El uso de Cloudflare no implica afiliación. La biblioteca está copiada con sus referencias originales y sin eliminar funcionalidades.
+
+### Escaneo LAN bajo Wi-Fi y VPN
+
+Se obtiene la IPv4 de la conexión Wi-Fi mediante `ConnectivityManager.getLinkProperties()` y `LinkAddress` (no mediante `WifiInfo.getIpAddress()`, obsoleto), incluso si una VPN es la red predeterminada. Solo se permite escanear un bloque privado `/24` contenido íntegramente en la subred de la interfaz; las subredes `/25`–`/32` se rechazan expresamente para evitar exploraciones fuera de la subred. Las conexiones TCP se enlazan explícitamente a la red física Wi-Fi mediante `Network.getSocketFactory()`, evitando que la ruta VPN predeterminada desvíe las pruebas. No se escanean IP públicas, datos móviles ni direcciones de otras redes.

@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import javax.net.SocketFactory;
 import java.util.concurrent.*;
 /** Explicit private-LAN /24 scan only; an absent service does not imply an absent host. */
 public final class LanScanner {
@@ -16,7 +17,29 @@ public final class LanScanner {
         if(!isPrivateIpv4(a,b))throw new IllegalArgumentException("Only private Wi-Fi IPv4 networks are supported");
         return a+"."+b+"."+c+".";
     }
+    /** Validate a dotted IPv4 address and derive the single /24 block containing it. */
+    public static String prefixFromAddress(String address) {
+        if (address == null || !address.matches("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"))
+            throw new IllegalArgumentException("Invalid Wi-Fi IPv4 address");
+        String[] octets = address.split("\\.");
+        int[] numbers = new int[4];
+        for (int i = 0; i < 4; i++) {
+            numbers[i] = Integer.parseInt(octets[i]);
+            if (numbers[i] < 0 || numbers[i] > 255)
+                throw new IllegalArgumentException("Invalid IPv4 octet");
+        }
+        if (!isPrivateIpv4(numbers[0], numbers[1]))
+            throw new IllegalArgumentException("Only private Wi-Fi IPv4 networks are supported");
+        return numbers[0] + "." + numbers[1] + "." + numbers[2] + ".";
+    }
     public static List<String> scan(String prefix) throws Exception {
+        return scan(prefix, SocketFactory.getDefault());
+    }
+    /**
+     * Bind TCP probes to a chosen Android Network socket factory. Essential
+     * when the VPN is the default route but the authorized LAN is on Wi-Fi.
+     */
+    public static List<String> scan(String prefix, SocketFactory factory) throws Exception {
         if(prefix==null||!prefix.matches("(?:\\d{1,3}\\.){3}"))
             throw new IllegalArgumentException("Invalid subnet");
         String[] parts=prefix.substring(0,prefix.length()-1).split("\\.");
@@ -29,7 +52,7 @@ public final class LanScanner {
             List<Future<String>> pending=new ArrayList<>();
             for(int i=1;i<=254;i++){
                 final String address=prefix+i;
-                pending.add(pool.submit(()->visible(address)?address:null));
+                pending.add(pool.submit(()->visible(address,factory)?address:null));
             }
             List<String> found=new ArrayList<>();
             for(Future<String> item:pending){
@@ -40,12 +63,12 @@ public final class LanScanner {
             return found;
         } finally {pool.shutdownNow();}
     }
-    private static boolean visible(String address) {
-        try(Socket s=new Socket()) {
+    private static boolean visible(String address, SocketFactory factory) {
+        try(Socket s=factory.createSocket()) {
             s.connect(new InetSocketAddress(InetAddress.getByName(address),80),220);
             return true;
         }catch(Exception ignored){}
-        try(Socket s=new Socket()) {
+        try(Socket s=factory.createSocket()) {
             s.connect(new InetSocketAddress(InetAddress.getByName(address),443),220);
             return true;
         }catch(Exception ignored){}
