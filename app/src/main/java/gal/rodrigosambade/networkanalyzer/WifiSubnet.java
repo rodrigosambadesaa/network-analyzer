@@ -15,7 +15,15 @@ import java.net.Inet4Address;
  */
 public final class WifiSubnet {
     private WifiSubnet() {}
-    public static String private24Prefix(Context context) {
+    public static final class Subnet {
+        public final String prefix;
+        public final Network network;
+        private Subnet(String prefix, Network network) {
+            this.prefix=prefix; this.network=network;
+        }
+    }
+    public static String private24Prefix(Context context) { return findPrivate24(context).prefix; }
+    public static Subnet findPrivate24(Context context) {
         ConnectivityManager manager =
                 (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (manager == null) throw new IllegalStateException("El servicio de red no está disponible.");
@@ -34,7 +42,7 @@ public final class WifiSubnet {
                             "La red Wi-Fi utiliza una subred más pequeña que /24. Escaneo no iniciado.");
                 }
                 try {
-                    return LanScanner.prefixFromAddress(link.getAddress().getHostAddress());
+                    return new Subnet(LanScanner.prefixFromAddress(link.getAddress().getHostAddress()), network);
                 } catch (IllegalArgumentException ignored) {
                     // Continue looking for a private IPv4 address.
                 }

@@ -115,9 +115,10 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Escaneo local")
           .setMessage("¿Comprobar hasta 254 direcciones de tu subred Wi-Fi privada, únicamente en puertos TCP 80 y 443? Utilízalo solo en redes propias o autorizadas. No garantiza descubrir todos los equipos.")
           .setPositiveButton("Escanear",(d,w)->execute(()->{
-              String prefix=WifiSubnet.private24Prefix(this);
+              WifiSubnet.Subnet subnet=WifiSubnet.findPrivate24(this);
+              String prefix=subnet.prefix;
               show("Explorando "+prefix+"0/24…");
-              List<String> hosts=LanScanner.scan(prefix);
+              List<String> hosts=LanScanner.scan(prefix,subnet.network.getSocketFactory());
               show("Hosts con TCP 80/443 accesible en "+prefix+"0/24: "+hosts.size()+
                 "\n"+String.join("\n",hosts)+"\n\nNota: no detecta dispositivos con esos puertos cerrados.");
           })).setNegativeButton("Cancelar",null).show();

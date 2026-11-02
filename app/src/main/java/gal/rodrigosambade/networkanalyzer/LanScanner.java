@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import javax.net.SocketFactory;
 import java.util.concurrent.*;
 /** Explicit private-LAN /24 scan only; an absent service does not imply an absent host. */
 public final class LanScanner {
@@ -32,6 +33,13 @@ public final class LanScanner {
         return numbers[0] + "." + numbers[1] + "." + numbers[2] + ".";
     }
     public static List<String> scan(String prefix) throws Exception {
+        return scan(prefix, SocketFactory.getDefault());
+    }
+    /**
+     * Bind TCP probes to a chosen Android Network socket factory. Essential
+     * when the VPN is the default route but the authorized LAN is on Wi-Fi.
+     */
+    public static List<String> scan(String prefix, SocketFactory factory) throws Exception {
         if(prefix==null||!prefix.matches("(?:\\d{1,3}\\.){3}"))
             throw new IllegalArgumentException("Invalid subnet");
         String[] parts=prefix.substring(0,prefix.length()-1).split("\\.");
@@ -44,7 +52,7 @@ public final class LanScanner {
             List<Future<String>> pending=new ArrayList<>();
             for(int i=1;i<=254;i++){
                 final String address=prefix+i;
-                pending.add(pool.submit(()->visible(address)?address:null));
+                pending.add(pool.submit(()->visible(address,factory)?address:null));
             }
             List<String> found=new ArrayList<>();
             for(Future<String> item:pending){
@@ -55,12 +63,12 @@ public final class LanScanner {
             return found;
         } finally {pool.shutdownNow();}
     }
-    private static boolean visible(String address) {
-        try(Socket s=new Socket()) {
+    private static boolean visible(String address, SocketFactory factory) {
+        try(Socket s=factory.createSocket()) {
             s.connect(new InetSocketAddress(InetAddress.getByName(address),80),220);
             return true;
         }catch(Exception ignored){}
-        try(Socket s=new Socket()) {
+        try(Socket s=factory.createSocket()) {
             s.connect(new InetSocketAddress(InetAddress.getByName(address),443),220);
             return true;
         }catch(Exception ignored){}
