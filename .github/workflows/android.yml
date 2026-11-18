@@ -2,6 +2,10 @@ name: Android CI
 on:
   push:
   pull_request:
+# CVE-2026-114938: protect the JDK used for Gradle/Android SDK builds.
+env:
+  JAVA_TOOL_OPTIONS: -XX:-UseBASE64Intrinsics
+
 jobs:
   build:
     runs-on: ubuntu-latest
