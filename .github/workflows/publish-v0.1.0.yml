@@ -14,6 +14,10 @@ concurrency:
   group: v0.1.0-preview-release
   cancel-in-progress: false
 
+# CVE-2026-114938: protect the JDK used for Gradle/Android SDK builds.
+env:
+  JAVA_TOOL_OPTIONS: -XX:-UseBASE64Intrinsics
+
 jobs:
   release:
     if: github.ref == 'refs/heads/main'
