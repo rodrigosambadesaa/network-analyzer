@@ -61,9 +61,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if gh release view v0.1.0 >/dev/null 2>&1; then
-            echo "v0.1.0 already exists, refusing to overwrite."
-            exit 1
+          # Re-running a published version must not replace signed artifacts.
+          if gh release view v0.1.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::notice::v0.1.0 already published; APK and checksums preserved."
+            exit 0
           fi
           gh release create v0.1.0 \
             "dist/network-analyzer-v0.1.0-debug.apk" \
